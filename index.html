@@ -258,6 +258,23 @@ input[type=range]::-webkit-slider-thumb{
 input[type=range]:active::-webkit-slider-thumb{border-color:var(--signal)}
 input[type=range]:focus-visible::-webkit-slider-thumb{border-color:var(--signal)}
 
+/* 描边颜色控件 */
+.stroke-ctl{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+input[type=color]{
+  -webkit-appearance:none;appearance:none;
+  width:38px;height:28px;padding:0;flex:0 0 auto;
+  border:1px solid var(--rule-strong);border-radius:var(--radius);
+  background:var(--panel);cursor:pointer;
+}
+input[type=color]::-webkit-color-swatch-wrapper{padding:3px}
+input[type=color]::-webkit-color-swatch{border:none;border-radius:2px}
+input[type=color]:disabled{opacity:.8;cursor:not-allowed;border-style:dashed}
+.stroke-ctl .chk-line{font-size:12px;color:var(--ink-2);min-height:26px}
+.swatch-dot{
+  width:11px;height:11px;border-radius:2px;flex:0 0 auto;
+  border:1px solid var(--rule-strong);
+}
+
 .divider{height:1px;background:var(--rule);margin:14px 0}
 .hint{
   font-size:11.5px;color:var(--steel);line-height:1.6;
@@ -490,6 +507,28 @@ input[type=range]:focus-visible::-webkit-slider-thumb{border-color:var(--signal)
           <div class="field-h"><span data-i18n="adj.tolerance">去底容差</span><span class="v" id="tolVal">24</span></div>
           <input type="range" id="toleranceRange" min="1" max="120" step="1" value="24">
         </div>
+        <div class="divider"></div>
+        <label class="chk-line" style="margin-bottom:11px">
+          <input type="checkbox" id="strokeOn">
+          <span style="font-size:12.5px;font-weight:500" data-i18n="adj.stroke">外描边</span>
+        </label>
+        <div id="strokeFields" class="hidden">
+          <div class="field">
+            <div class="field-h"><span data-i18n="adj.strokeWidth">描边宽度</span><span class="v" id="strokeVal">6 px</span></div>
+            <input type="range" id="strokeRange" min="0" max="40" step="1" value="6">
+          </div>
+          <div class="field">
+            <div class="field-h"><span data-i18n="adj.strokeColor">描边颜色</span><span class="v" id="strokeColorVal">#FFFFFF</span></div>
+            <div class="stroke-ctl">
+              <input type="color" id="strokeColor" value="#FFFFFF" data-i18n-title="adj.strokeColorPick" title="选择描边颜色">
+              <label class="chk-line">
+                <input type="checkbox" id="strokeAuto">
+                <span data-i18n="adj.strokeAuto">自动对比色</span>
+              </label>
+            </div>
+          </div>
+          <div class="hint" data-i18n="adj.strokeHint"></div>
+        </div>
       </div>
     </div>
 
@@ -600,6 +639,9 @@ const I18N = {
     "tip.fit":"图片会<b>等比缩放并居中</b>填满卡面，超出部分自动裁掉；始终锁定 1.586 : 1 的宽高比。",
     "adj.empty":"点击卡面上的 logo 进行编辑","adj.size":"大小","adj.opacity":"不透明度",
     "adj.rotation":"旋转","adj.removeBg":"去除背景底色","adj.tolerance":"去底容差",
+    "adj.stroke":"外描边","adj.strokeWidth":"描边宽度","adj.strokeColor":"描边颜色",
+    "adj.strokeAuto":"自动对比色","adj.strokeColorPick":"选择描边颜色",
+    "adj.strokeHint":"描边沿 logo 轮廓向外扩展，不覆盖主体，也不会改变 logo 的形状与比例。宽度以导出画布像素（1036 × 640）为单位。",
     "adj.up":"上移一层","adj.down":"下移一层","adj.delete":"删除",
     "layers.empty":"暂无 logo",
     "toast.fitted":"已重新匹配卡面尺寸","toast.cropped":"裁剪已应用",
@@ -630,6 +672,9 @@ const I18N = {
     "tip.fit":"The image is <b>scaled and centred</b> to fill the card, overflow is trimmed, and the 1.586 : 1 ratio is always locked.",
     "adj.empty":"Click a logo on the card to edit it","adj.size":"Size","adj.opacity":"Opacity",
     "adj.rotation":"Rotation","adj.removeBg":"Remove background colour","adj.tolerance":"Tolerance",
+    "adj.stroke":"Outline","adj.strokeWidth":"Outline width","adj.strokeColor":"Outline colour",
+    "adj.strokeAuto":"Auto contrast","adj.strokeColorPick":"Pick outline colour",
+    "adj.strokeHint":"The outline grows outward from the logo silhouette — it never covers the artwork or changes its shape or proportions. Width is measured in export-canvas pixels (1036 × 640).",
     "adj.up":"Move up","adj.down":"Move down","adj.delete":"Delete",
     "layers.empty":"No logos yet",
     "toast.fitted":"Refitted to the card ratio","toast.cropped":"Crop applied",
@@ -742,11 +787,16 @@ async function addLogoFromUrl(url, name){
   try{ img = await loadImage(url); }catch(e){ toast(t("toast.loadFail")); return; }
   const maxDim = Math.max(img.naturalWidth||img.width, img.naturalHeight||img.height, 1);
   const s = (EXPORT_W*0.42)/maxDim;
+  const bw = (img.naturalWidth||img.width)*s, bh = (img.naturalHeight||img.height)*s;
   const logo = {
     id:nid(), name:name||"Logo", img, processed:null, srcUrl:url,
     x:EXPORT_W/2, y:EXPORT_H/2,            // 中心点锚点
-    baseW:(img.naturalWidth||img.width)*s, baseH:(img.naturalHeight||img.height)*s,
+    baseW:bw, baseH:bh,
     scale:1, rotation:0, opacity:1, removeBg:false, tolerance:24,
+    // 描边：默认开启、自动对比色，宽度随 logo 尺寸给出合理初值
+    strokeOn:true, strokeWidth:Math.round(clamp(Math.min(bw,bh)*0.035, 3, 8)),
+    strokeAuto:true, strokeColor:"#FFFFFF",
+    _srcVer:0, _stroke:null, _autoColor:null,
   };
   state.logos.push(logo);
   select(logo.id);
@@ -767,6 +817,10 @@ async function addLogoFiles(fileList){
 }
 
 function processRemoveBg(logo){
+  // 源图内容变化 → 作废描边缓存与自动色缓存
+  logo._srcVer = (logo._srcVer||0) + 1;
+  logo._stroke = null;
+  logo._autoColor = null;
   if(!logo.removeBg){ logo.processed = null; return; }
   const img = logo.img;
   const w = img.naturalWidth||img.width, h = img.naturalHeight||img.height;
@@ -791,6 +845,154 @@ function processRemoveBg(logo){
   logo.processed = c;
 }
 
+/* ================= 外描边 ================= */
+/* 思路：把 logo 的 alpha 轮廓栅格化 → 求"到图形的最短距离" → 只在不透明度为 0 的
+   外侧区域按距离填充描边色。因为是真·距离场，描边是严格向外等距扩展的：
+   1) 主体像素上描边 alpha 恒为 0，不会遮挡/改变 logo 本身；
+   2) 边界处用 1px 的覆盖率过渡，边缘平滑无锯齿。                              */
+
+const EDT_BUF = { v:null, z:null };
+const EDT_INF = 1e20;
+
+/* Felzenszwalb 一维精确距离变换（平方距离），O(n) */
+function edt1d(f, d, n){
+  if(!EDT_BUF.v || EDT_BUF.v.length < n+1){
+    EDT_BUF.v = new Int32Array(n+1);
+    EDT_BUF.z = new Float64Array(n+2);
+  }
+  const v = EDT_BUF.v, z = EDT_BUF.z;
+  let k = 0; v[0] = 0; z[0] = -EDT_INF; z[1] = EDT_INF;
+  for(let q=1;q<n;q++){
+    let s;
+    for(;;){
+      s = ((f[q] + q*q) - (f[v[k]] + v[k]*v[k])) / (2*q - 2*v[k]);
+      if(s <= z[k] && k > 0) k--; else break;
+    }
+    k++; v[k] = q; z[k] = s; z[k+1] = EDT_INF;
+  }
+  k = 0;
+  for(let q=0;q<n;q++){
+    while(z[k+1] < q) k++;
+    const dq = q - v[k];
+    d[q] = dq*dq + f[v[k]];
+  }
+}
+
+/* 可分离二维精确欧氏距离变换，就地返回平方距离 */
+function edt2d(f, W, H){
+  const m = Math.max(W, H);
+  const a = new Float64Array(m), b = new Float64Array(m);
+  for(let y=0;y<H;y++){
+    const o = y*W;
+    for(let x=0;x<W;x++) a[x] = f[o+x];
+    edt1d(a, b, W);
+    for(let x=0;x<W;x++) f[o+x] = b[x];
+  }
+  for(let x=0;x<W;x++){
+    for(let y=0;y<H;y++) a[y] = f[y*W+x];
+    edt1d(a, b, H);
+    for(let y=0;y<H;y++) f[y*W+x] = b[y];
+  }
+  return f;
+}
+
+function hexToRgb(hex){
+  let s = String(hex||"").replace("#","").trim();
+  if(s.length === 3) s = s[0]+s[0]+s[1]+s[1]+s[2]+s[2];
+  if(!/^[0-9a-fA-F]{6}$/.test(s)) return [255,255,255];
+  const v = parseInt(s,16);
+  return [(v>>16)&255, (v>>8)&255, v&255];
+}
+
+/* 自动对比色：按 logo 主体（不透明像素）的平均亮度决定深/浅描边 */
+const STROKE_DARK = "#111A2B", STROKE_LIGHT = "#FFFFFF";
+function autoStrokeColor(logo){
+  if(logo._autoColor) return logo._autoColor;
+  const src = logo.processed || logo.img;
+  let w = src.naturalWidth || src.width || 0, h = src.naturalHeight || src.height || 0;
+  let lum = 0.5;
+  if(w && h){
+    try{
+      const k = Math.min(1, 72/Math.max(w,h));
+      const c = document.createElement("canvas");
+      c.width = Math.max(1, Math.round(w*k)); c.height = Math.max(1, Math.round(h*k));
+      const cx = c.getContext("2d", { willReadFrequently:true });
+      cx.drawImage(src, 0, 0, c.width, c.height);
+      const d = cx.getImageData(0, 0, c.width, c.height).data;
+      let sum = 0, n = 0;
+      for(let i=0;i<d.length;i+=4){
+        if(d[i+3] < 140) continue;                     // 只统计主体像素
+        sum += (0.2126*d[i] + 0.7152*d[i+1] + 0.0722*d[i+2]) / 255;
+        n++;
+      }
+      if(n > 8) lum = sum/n;
+    }catch(e){ /* 跨域/受限画布：退回浅色描边 */ }
+  }
+  // 浅色 logo → 深色描边；深色 logo → 浅色描边
+  logo._autoColor = lum >= 0.5 ? STROKE_DARK : STROKE_LIGHT;
+  return logo._autoColor;
+}
+
+/* 生成描边精灵图（带缓存）。dispW/dispH 为 logo 当前在导出画布上的显示尺寸 */
+function strokeSprite(logo, dispW, dispH){
+  const rExp = Math.round(logo.strokeWidth||0);
+  if(rExp <= 0) return null;
+  const color = logo.strokeAuto ? autoStrokeColor(logo) : (logo.strokeColor || STROKE_LIGHT);
+  const src = logo.processed || logo.img;
+  const sw = src.naturalWidth || src.width || 1, sh = src.naturalHeight || src.height || 1;
+
+  // 工作分辨率：贴近显示尺寸，上限 640 以控制计算量
+  const k = clamp(Math.max(dispW, dispH), 96, 640) / Math.max(sw, sh);
+  const rw = Math.max(2, Math.round(sw*k)), rh = Math.max(2, Math.round(sh*k));
+
+  const key = [rExp, color, rw, rh, logo._srcVer||0].join("|");
+  const cached = logo._stroke;
+  if(cached && cached.key === key) return cached;
+
+  // 导出画布像素 → 工作画布像素
+  const r = clamp(rExp * (rw / Math.max(dispW, 1)), 0.5, 160);
+  const pad = Math.ceil(r) + 2;
+  const W = rw + pad*2, H = rh + pad*2;
+
+  const c = document.createElement("canvas");
+  c.width = W; c.height = H;
+  const cx = c.getContext("2d", { willReadFrequently:true });
+  cx.imageSmoothingEnabled = true; cx.imageSmoothingQuality = "high";
+  cx.drawImage(src, pad, pad, rw, rh);
+
+  let data;
+  try{ data = cx.getImageData(0, 0, W, H).data; }
+  catch(e){ return null; }
+
+  const n = W*H;
+  const f = new Float64Array(n);
+  let seeds = 0;
+  for(let i=0;i<n;i++){
+    if(data[i*4+3] >= 64){ f[i] = 0; seeds++; } else f[i] = EDT_INF;
+  }
+  if(!seeds){ logo._stroke = null; return null; }
+  edt2d(f, W, H);
+
+  const rgb = hexToRgb(color);
+  const out = new Uint8ClampedArray(n*4);
+  const outer = r + 0.5;
+  for(let i=0;i<n;i++){
+    const dd = f[i];
+    if(dd <= 0) continue;                    // 图形内部：完全不画，绝不遮挡主体
+    const dist = Math.sqrt(dd);
+    const cov = outer - dist;                // 1px 覆盖率过渡 → 平滑边缘
+    if(cov <= 0) continue;
+    const o = i*4;
+    out[o] = rgb[0]; out[o+1] = rgb[1]; out[o+2] = rgb[2];
+    out[o+3] = cov >= 1 ? 255 : Math.round(cov*255);
+  }
+  cx.putImageData(new ImageData(out, W, H), 0, 0);
+
+  const sp = { key, canvas:c, w:W, h:H, rw, rh };
+  logo._stroke = sp;
+  return sp;
+}
+
 /* ================= 渲染 ================= */
 function render(){
   ctx.clearRect(0,0,EXPORT_W,EXPORT_H);
@@ -807,6 +1009,14 @@ function drawLogo(logo){
   ctx.translate(logo.x, logo.y);
   if(logo.rotation) ctx.rotate(deg2rad(logo.rotation));
   ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = "high";
+  // 先画外描边（位于 logo 之下，只沿轮廓向外扩展），再画 logo 主体
+  if(logo.strokeOn && logo.strokeWidth > 0){
+    const sp = strokeSprite(logo, w, h);
+    if(sp){
+      const dw = w * (sp.w / sp.rw), dh = h * (sp.h / sp.rh);
+      ctx.drawImage(sp.canvas, -dw/2, -dh/2, dw, dh);
+    }
+  }
   ctx.drawImage(src, -w/2, -h/2, w, h);
   ctx.restore();
 
@@ -856,6 +1066,20 @@ function syncEditor(){
   $("toleranceRange").value = logo.tolerance;
   $("tolVal").textContent = logo.tolerance;
   $("toleranceField").classList.toggle("hidden", !logo.removeBg);
+
+  // 描边
+  $("strokeOn").checked = !!logo.strokeOn;
+  $("strokeFields").classList.toggle("hidden", !logo.strokeOn);
+  $("strokeRange").value = Math.round(logo.strokeWidth||0);
+  $("strokeVal").textContent = Math.round(logo.strokeWidth||0) + " px";
+  $("strokeAuto").checked = !!logo.strokeAuto;
+  $("strokeColor").disabled = !!logo.strokeAuto;
+  syncStrokeColorUI(logo);
+}
+function syncStrokeColorUI(logo){
+  const eff = (logo.strokeAuto ? autoStrokeColor(logo) : (logo.strokeColor || STROKE_LIGHT)).toUpperCase();
+  $("strokeColor").value = eff;
+  $("strokeColorVal").textContent = eff;
 }
 
 function renderLayers(){
@@ -963,6 +1187,30 @@ $("toleranceRange").oninput = e=>{
   const l=cur(); if(!l) return;
   l.tolerance = +e.target.value; $("tolVal").textContent = e.target.value;
   if(l.removeBg){ processRemoveBg(l); renderLayers(); render(); }
+};
+$("strokeOn").onchange = e=>{
+  const l=cur(); if(!l) return;
+  l.strokeOn = e.target.checked;
+  $("strokeFields").classList.toggle("hidden", !l.strokeOn);
+  render();
+};
+$("strokeRange").oninput = e=>{
+  const l=cur(); if(!l) return;
+  l.strokeWidth = +e.target.value;
+  $("strokeVal").textContent = e.target.value + " px";
+  render();
+};
+$("strokeAuto").onchange = e=>{
+  const l=cur(); if(!l) return;
+  l.strokeAuto = e.target.checked;
+  $("strokeColor").disabled = l.strokeAuto;
+  syncStrokeColorUI(l); render();
+};
+$("strokeColor").oninput = e=>{
+  const l=cur(); if(!l) return;
+  l.strokeColor = e.target.value;
+  $("strokeColorVal").textContent = e.target.value.toUpperCase();
+  render();
 };
 $("btnDelete").onclick = deleteSelected;
 $("btnLayerUp").onclick = ()=>moveLayer(1);
