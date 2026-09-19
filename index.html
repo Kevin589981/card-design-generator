@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>卡面设计生成器 · ISO 7810 ID-1</title>
-<meta name="description" content="按 ISO 7810 ID-1 标准设计银行卡与交通卡卡面的纯前端工具。">
+<meta name="description" content="按 ISO 7810 ID-1 标准设计卡面的纯前端开源工具，图片处理全部在浏览器本地完成。">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect x='2' y='7' width='28' height='18' rx='3' fill='%2317243D'/><rect x='2' y='11' width='28' height='3' fill='%23A9671F'/></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -454,7 +454,7 @@ input[type=range]:focus-visible::-webkit-slider-thumb{border-color:var(--signal)
       <div class="drop drop-logo" id="logoDrop">
         <div class="glyph"><svg class="icon"><use href="#i-plus"/></svg></div>
         <div class="t" data-i18n="logo.drop.title">拖拽 logo 到此处，或点击选择</div>
-        <div class="s" data-i18n="logo.drop.hint">可一次选多个 · SVG、PNG、JPG、WebP</div>
+        <div class="s" data-i18n="logo.drop.hint">可一次选多个，支持 SVG、PNG、JPG、WebP</div>
       </div>
       <div class="hint" data-i18n-html="logo.tip"></div>
     </div>
@@ -509,15 +509,15 @@ input[type=range]:focus-visible::-webkit-slider-thumb{border-color:var(--signal)
     <div class="modal-h">
       <span class="glyph"><svg class="icon lg"><use href="#i-shield"/></svg></span>
       <div>
-        <h3 id="legalTitle" data-i18n="legal.title">素材使用法律声明与免责声明</h3>
-        <div class="sub" data-i18n="legal.sub">使用前请完整阅读并确认</div>
+        <h3 id="legalTitle" data-i18n="legal.title">使用条款</h3>
+        <div class="sub" data-i18n="legal.sub">使用前请阅读并确认</div>
       </div>
     </div>
     <div class="modal-b legal" id="legalBody"></div>
     <div class="modal-f">
       <label class="agree grow">
         <input type="checkbox" id="agreeChk">
-        <span data-i18n="legal.agree">我已完整阅读并同意上述条款，并承诺仅将本工具用于合法的设计参考用途。</span>
+        <span data-i18n="legal.agree">我已阅读并同意上述条款，并确认我上传的内容由我负责。</span>
       </label>
       <button class="btn" id="legalDecline"><svg class="icon"><use href="#i-ban"/></svg><span data-i18n="legal.decline">不同意，退出</span></button>
       <button class="btn solid" id="legalAccept" disabled><svg class="icon"><use href="#i-check"/></svg><span data-i18n="legal.accept">同意并继续</span></button>
@@ -531,7 +531,7 @@ input[type=range]:focus-visible::-webkit-slider-thumb{border-color:var(--signal)
     <div class="blocked">
       <div class="glyph"><svg class="icon lg"><use href="#i-ban"/></svg></div>
       <h3 data-i18n="blocked.title">未接受使用条款</h3>
-      <p data-i18n="blocked.sub">本工具内置的标识素材涉及第三方商标与版权，需在确认使用条款后方可继续。</p>
+      <p data-i18n="blocked.sub">使用本工具前需先确认使用条款。你可以返回重新阅读。</p>
       <button class="btn solid" id="blockedBack"><span data-i18n="blocked.back">重新阅读条款</span></button>
     </div>
   </div>
@@ -596,7 +596,7 @@ const I18N = {
     "btn.refit":"重新匹配","btn.crop":"裁剪",
     "btn.cancel":"取消","btn.apply":"应用裁剪",
     "logo.drop.title":"拖拽 logo 到此处，或点击选择","logo.drop.hint":"可一次选多个，支持 SVG、PNG、JPG、WebP",
-    "logo.tip":"请上传<b>你自己拥有权利</b>或已获授权的 logo。本工具不含任何内置素材。",
+    "logo.tip":"请上传你有权使用的 logo。本项目不提供任何第三方预设 Logo 或官方素材。",
     "tip.fit":"图片会<b>等比缩放并居中</b>填满卡面，超出部分自动裁掉；始终锁定 1.586 : 1 的宽高比。",
     "adj.empty":"点击卡面上的 logo 进行编辑","adj.size":"大小","adj.opacity":"不透明度",
     "adj.rotation":"旋转","adj.removeBg":"去除背景底色","adj.tolerance":"去底容差",
@@ -608,8 +608,8 @@ const I18N = {
     "toast.loadFail":"图片加载失败，请换一张","toast.langSaved":"已切换为中文",
     "confirm.clear":"确定清空画布吗？此操作无法撤销。",
     "crop.title":"裁剪卡面图片","crop.sub":"拖动裁剪框调整位置，拖动四角缩放；比例锁定为 1.586 : 1",
-    "legal.title":"使用条款与免责声明","legal.sub":"使用前请完整阅读并确认",
-    "legal.agree":"我已完整阅读并同意上述条款，并确认我上传的内容均由我拥有权利或已获授权。",
+    "legal.title":"使用条款","legal.sub":"使用前请阅读并确认",
+    "legal.agree":"我已阅读并同意上述条款，并确认我上传的内容由我负责。",
     "legal.decline":"不同意，退出","legal.accept":"同意并继续",
     "blocked.title":"未接受使用条款",
     "blocked.sub":"使用本工具前需先确认使用条款。你可以返回重新阅读。",
@@ -626,7 +626,7 @@ const I18N = {
     "btn.refit":"Refit","btn.crop":"Crop",
     "btn.cancel":"Cancel","btn.apply":"Apply crop",
     "logo.drop.title":"Drop logos here, or click to choose","logo.drop.hint":"Select several at once · SVG, PNG, JPG, WebP",
-    "logo.tip":"Only upload logos <b>you own or are licensed to use</b>. This tool ships no built-in materials.",
+    "logo.tip":"Upload only logos you have the right to use. This project ships no third-party preset logos or official materials.",
     "tip.fit":"The image is <b>scaled and centred</b> to fill the card, overflow is trimmed, and the 1.586 : 1 ratio is always locked.",
     "adj.empty":"Click a logo on the card to edit it","adj.size":"Size","adj.opacity":"Opacity",
     "adj.rotation":"Rotation","adj.removeBg":"Remove background colour","adj.tolerance":"Tolerance",
@@ -638,8 +638,8 @@ const I18N = {
     "toast.loadFail":"Could not load that image, try another","toast.langSaved":"Switched to English",
     "confirm.clear":"Clear the canvas? This cannot be undone.",
     "crop.title":"Crop the card image","crop.sub":"Drag the box to reposition, drag a corner to resize; the ratio is locked to 1.586 : 1",
-    "legal.title":"Terms of Use and Disclaimer","legal.sub":"Please read and confirm in full before use",
-    "legal.agree":"I have read and agree to the terms above, and confirm that everything I upload is mine or properly licensed.",
+    "legal.title":"Terms of Use","legal.sub":"Please read and confirm before use",
+    "legal.agree":"I have read and agree to the terms above, and confirm that the content I upload is my responsibility.",
     "legal.decline":"Decline and exit","legal.accept":"Agree and continue",
     "blocked.title":"Terms not accepted",
     "blocked.sub":"You need to accept the terms before using this tool. You can go back and read them again.",
@@ -649,29 +649,29 @@ const I18N = {
 
 const LEGAL = {
   zh:{
-    lead:"本工具不内置、不提供、不托管任何商标、标识或图片素材。你用于卡面的所有图片与 logo 均由你自己上传，其权利与责任也完全归属于你。在使用本工具前，请完整阅读并确认以下条款。你每次打开本工具都会看到本声明。",
+    lead:"本项目是一个纯前端的通用 ID-1 卡面设计工具：你自行上传图片、logo 与文字，在本地完成排版并导出静态 PNG。本项目不生成真实支付卡，也不处理卡号、CVV、有效期、PIN 或任何账户信息。使用前请阅读以下条款，你每次打开本工具都会看到本声明。",
     s:[
-      ["一、本工具不提供素材","本工具只是一个纯前端的排版与合成工具，不含任何内置素材库，也不代表任何银行、卡组织、交通卡机构或其他第三方的立场。本工具与其作者不因你使用本工具而获得、授予或转让任何知识产权。"],
-      ["二、你对自己上传的内容负责","你上传的每一张图片与每一个 logo，都必须是你自己享有权利的作品，或你已取得权利人有效授权的作品。本工具不会也无法核验你上传内容的权利状态，核验义务完全在你。"],
-      ["三、商标与第三方权利","若你上传的内容包含他人商标、品牌标识、美术作品或肖像，你须自行取得权利人的书面许可。你不得：（1）以暗示与权利人存在赞助、合作、认证或隶属关系的方式使用；（2）以淡化、污损或损害他人商标声誉的方式使用；（3）移除或篡改他人的权利标记与署名。"],
-      ["四、禁止用途","严禁将本工具或其输出用于：（1）制作或伪造可用于交易的支付工具、凭证或卡片；（2）欺诈、洗钱、身份冒用等违法活动；（3）制作足以误导他人判断真伪的金融或交通凭证图像；（4）其他任何违反适用法律法规的行为。"],
-      ["五、发行合规提示","ISO 7810 ID-1 仅规定卡片的物理尺寸，不涉及卡面视觉设计。真实银行卡、交通卡的发行须取得监管机构与卡组织授权，卡面设计须经发卡机构审核通过。本工具的输出不能直接用于制作实体卡片。"],
+      ["一、独立的开源工具","本项目为独立的开源卡面设计工具，与 Apple、Apple Pay、Visa、Mastercard 及任何发卡机构不存在官方合作、授权、隶属或背书关系。第三方商标及相关知识产权归各自权利人所有。本项目不提供任何银行、支付组织或其他第三方的预设 Logo、卡面模板或官方素材，用户自行上传的内容由用户负责。"],
+      ["二、你对自己上传的内容负责","你上传的图片、logo 与文字由你负责。本工具不会也无法核验这些内容的权利状态。"],
+      ["三、商标与第三方权利","若你上传的内容包含他人商标、品牌标识、美术作品或肖像，你应确保该使用方式具有适当的法律依据或已获得必要的授权，并自行承担相应责任。请勿移除或篡改他人的权利标记与署名。"],
+      ["四、禁止用途","不得将本工具或其输出用于欺诈、身份冒用、洗钱等违法活动，或用于其他违反适用法律法规的行为。"],
+      ["五、输出的性质与使用边界","本工具输出仅为视觉设计文件，不代表任何机构发行的支付卡、交通卡或其他官方凭证，也不得用于伪造、冒充或制作可用于交易的金融、交通或其他官方凭证。用于设计稿、艺术卡、收藏卡、桌游卡等非凭证用途的实体打印不受此限。ISO 7810 ID-1 仅规定卡片的物理尺寸，不涉及卡面视觉设计。"],
       ["六、本地处理与数据","本工具完全在你的浏览器本地运行，你上传的图片与生成的卡面不会上传到任何服务器，也不会被保存或收集。请自行保管导出文件。"],
-      ["七、免责与担保","本工具按「现状」提供，不提供任何明示或默示的担保，包括但不限于对输出成果的合法性、准确性、不侵权性与适用性的担保。作者不对因使用或无法使用本工具所导致的任何直接或间接损失承担责任。"],
-      ["八、条款变更","本声明可能被更新，继续使用本工具即视为接受更新后的条款。若你不同意任一条款，请立即停止使用本工具。"],
+      ["七、按现状提供","本工具按「现状」提供，不提供任何明示或默示的担保，包括但不限于对输出成果合法性、准确性与适用性的担保。"],
+      ["八、条款变更","本声明可能被更新，继续使用本工具即视为接受更新后的条款。"],
     ]
   },
   en:{
-    lead:"This tool does not bundle, provide or host any trademark, logo or image material. Every image and logo you place on the card is uploaded by you, and the rights and responsibility for it rest entirely with you. Please read and confirm the following terms in full before using this tool. This notice appears every time you open the tool.",
+    lead:"This project is a general-purpose, front-end ID-1 card face design tool: you upload your own images, logos and text, lay them out locally, and export a static PNG. It does not generate real payment cards and does not handle card numbers, CVV, expiry dates, PINs or any account information. Please read the following terms before use. This notice appears every time you open the tool.",
     s:[
-      ["1. No materials provided","This tool is purely a front-end layout and composition utility. It contains no built-in material library and represents no bank, card network, transit operator or other third party. Neither this tool nor its author acquires, grants or transfers any intellectual property through your use of it."],
-      ["2. You are responsible for what you upload","Every image and logo you upload must be a work you own, or one you have a valid licence to use. This tool cannot and does not verify the rights status of your uploads; that obligation is entirely yours."],
-      ["3. Trademarks and third-party rights","If anything you upload contains another party's trademark, brand mark, artwork or likeness, you must obtain that party's written permission yourself. You must not: (1) use it in a way that suggests sponsorship, cooperation, certification or affiliation with that party; (2) use it in a way that dilutes, tarnishes or damages the reputation of a mark; (3) remove or alter any rights notice or attribution."],
-      ["4. Prohibited uses","You must not use this tool or its output to: (1) produce or counterfeit payment instruments, vouchers or cards usable in transactions; (2) engage in fraud, money laundering, identity misrepresentation or other unlawful activity; (3) create imagery of financial or transit credentials likely to mislead others as to authenticity; (4) do anything else that violates applicable law."],
-      ["5. Issuance compliance","ISO 7810 ID-1 governs only the physical dimensions of a card, not its visual design. Issuing real bank or transit cards requires authorisation from regulators and card networks, and card face designs must be approved by the issuing institution. Output from this tool must not be used to manufacture physical cards."],
+      ["1. Independent open-source tool","This project is an independent, open-source card face design tool. It has no official partnership, authorisation, affiliation or endorsement with Apple, Apple Pay, Visa, Mastercard or any card issuer. Third-party trademarks and related intellectual property belong to their respective owners. This project ships no preset logos, card templates or official materials from any bank, payment network or other third party; content you upload is your responsibility."],
+      ["2. You are responsible for what you upload","Images, logos and text you upload are your responsibility. This tool cannot and does not verify the rights status of that content."],
+      ["3. Trademarks and third-party rights","If anything you upload contains another party's trademark, brand mark, artwork or likeness, you should make sure your use has an appropriate legal basis or that you have obtained any necessary permission, and you bear the corresponding responsibility. Do not remove or alter another party's rights notices or attribution."],
+      ["4. Prohibited uses","Do not use this tool or its output for fraud, identity misrepresentation, money laundering or other unlawful activity, or for anything else that violates applicable law."],
+      ["5. Nature and limits of the output","Output from this tool is a visual design file only. It does not represent a payment card, transit card or other official credential issued by any institution, and it must not be used to forge, impersonate or produce financial, transit or other official credentials usable in transactions. Printing the output for non-credential purposes — design mockups, art cards, collectible cards, board game cards and similar — is not restricted. ISO 7810 ID-1 governs only the physical dimensions of a card, not its visual design."],
       ["6. Local processing","This tool runs entirely inside your browser. Images you upload and the card faces you generate are never sent to a server, stored or collected. Keep your own copies of exported files."],
-      ["7. Disclaimer and warranty","This tool is provided \"as is\" without warranty of any kind, express or implied, including as to the legality, accuracy, non-infringement or fitness of any output. The author is not liable for any direct or indirect loss arising from use or inability to use this tool."],
-      ["8. Changes to these terms","This notice may be updated; continued use of the tool constitutes acceptance of the updated terms. If you do not agree to any term, stop using this tool immediately."],
+      ["7. Provided as is","This tool is provided \"as is\" without warranty of any kind, express or implied, including as to the legality, accuracy or fitness of any output."],
+      ["8. Changes to these terms","This notice may be updated; continued use of the tool constitutes acceptance of the updated terms."],
     ]
   }
 };
