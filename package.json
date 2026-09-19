@@ -1,0 +1,12 @@
+{
+  "name": "Bank Card Design Generator",
+  "version": "1.0.0",
+  "card": {
+    "standard": "ISO 7810 ID-1",
+    "widthMm": 85.6,
+    "heightMm": 53.98,
+    "ratio": 1.585772508336421,
+    "exportWidth": 1036,
+    "exportHeight": 640
+  }
+}
