@@ -61,6 +61,7 @@ input,select{font-family:inherit;font-size:inherit;color:inherit}
 .icon{width:15px;height:15px;flex:0 0 auto;stroke:currentColor;fill:none;
   stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
 .icon.lg{width:17px;height:17px}
+.icon.solid{fill:currentColor;stroke:none}
 
 /* ---------- 顶栏 ---------- */
 header.top{
@@ -113,6 +114,19 @@ header.top{
 .lang button + button{border-left:1px solid var(--rule-strong)}
 .lang button:hover{color:var(--ink);background:#F7F9FB}
 .lang button[aria-pressed="true"]{background:var(--ink);color:#fff}
+
+/* 仓库 / 演示入口 */
+.repo-group{display:flex;gap:8px;flex:0 0 auto}
+.repo-group a.btn{text-decoration:none;white-space:nowrap}
+.repo-group #linkRepo span{font-variant-numeric:tabular-nums;letter-spacing:-.005em}
+@media(max-width:1240px){
+  #linkDemo span{display:none}
+  #linkDemo{padding:0 9px}
+}
+@media(max-width:1020px){
+  #linkRepo span{display:none}
+  #linkRepo{padding:0 9px}
+}
 
 /* ---------- 布局 ---------- */
 .layout{
@@ -395,6 +409,8 @@ input[type=color]:disabled{opacity:.8;cursor:not-allowed;border-style:dashed}
 <symbol id="i-layers" viewBox="0 0 24 24"><path d="M12 3.5l8.5 4.5L12 12.5 3.5 8 12 3.5z"/><path d="M3.5 13L12 17.5 20.5 13"/></symbol>
 <symbol id="i-image" viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M4.5 17l4.5-4.5 3.5 3.5 2.5-2.5 4.5 4.5"/></symbol>
 <symbol id="i-refit" viewBox="0 0 24 24"><path d="M4 9V5.5A1.5 1.5 0 015.5 4H9"/><path d="M15 4h3.5A1.5 1.5 0 0120 5.5V9"/><path d="M20 15v3.5a1.5 1.5 0 01-1.5 1.5H15"/><path d="M9 20H5.5A1.5 1.5 0 014 18.5V15"/></symbol>
+<symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M3.6 12h16.8"/><path d="M12 3.5c3.5 3.7 3.5 13.3 0 17M12 3.5c-3.5 3.7-3.5 13.3 0 17"/></symbol>
+<symbol id="i-github" viewBox="0 0 24 24"><path d="M12 .5C5.7.5.6 5.6.6 12c0 5.1 3.3 9.4 7.9 10.9.6.1.8-.3.8-.6v-2c-3.2.7-3.9-1.5-3.9-1.5-.5-1.3-1.3-1.7-1.3-1.7-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.7 1.3 3.4 1 .1-.8.4-1.3.7-1.6-2.6-.3-5.3-1.3-5.3-5.7 0-1.3.5-2.3 1.2-3.1-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.2 1.2a11 11 0 015.8 0c2.2-1.5 3.2-1.2 3.2-1.2.6 1.6.2 2.8.1 3.1.8.8 1.2 1.8 1.2 3.1 0 4.4-2.7 5.4-5.3 5.7.4.4.8 1.1.8 2.2v3.2c0 .3.2.7.8.6 4.6-1.5 7.9-5.8 7.9-10.9C23.4 5.6 18.3.5 12 .5z"/></symbol>
 </defs></svg>
 
 <header class="top">
@@ -404,6 +420,20 @@ input[type=color]:disabled{opacity:.8;cursor:not-allowed;border-style:dashed}
     <span class="spec">ISO 7810 ID-1</span>
   </div>
   <div class="spacer"></div>
+  <div class="repo-group">
+    <a class="btn quiet" id="linkDemo"
+       href="https://susie-meow.github.io/card-design-generator/"
+       target="_blank" rel="noopener noreferrer"
+       data-i18n-title="nav.demoTitle" title="在线演示（GitHub Pages）">
+      <svg class="icon"><use href="#i-globe"/></svg><span data-i18n="nav.demo">在线演示</span>
+    </a>
+    <a class="btn" id="linkRepo"
+       href="https://github.com/Susie-Meow/card-design-generator"
+       target="_blank" rel="noopener noreferrer"
+       data-i18n-title="nav.repoTitle" title="项目主页 · card-design-generator">
+      <svg class="icon solid"><use href="#i-github"/></svg><span data-i18n="nav.repo">card-design-generator</span>
+    </a>
+  </div>
   <div class="lang" role="group" aria-label="Language">
     <button id="langZh" aria-pressed="true">中文</button>
     <button id="langEn" aria-pressed="false">EN</button>
@@ -627,6 +657,8 @@ const I18N = {
   zh:{
     "app.title":"卡面设计生成器",
     "nav.legal":"法律声明","nav.crop":"裁剪","nav.export":"导出 PNG","nav.clear":"清空",
+    "nav.demo":"在线演示","nav.demoTitle":"在线演示（GitHub Pages）",
+    "nav.repo":"card-design-generator","nav.repoTitle":"项目主页 · card-design-generator",
     "bench.title":"卡面预览","bench.rounded":"按 3.18 mm 圆角呈现（导出同步）",
     "empty.title":"上传一张图片作为卡面","empty.sub":"图片会自动按 ISO 7810 ID-1 卡面比例匹配并居中，之后可在裁剪里二次调整构图。",
     "empty.cta":"选择图片",
@@ -660,6 +692,8 @@ const I18N = {
   en:{
     "app.title":"Card Face Studio",
     "nav.legal":"Legal","nav.crop":"Crop","nav.export":"Export PNG","nav.clear":"Clear",
+    "nav.demo":"Live demo","nav.demoTitle":"Live demo (GitHub Pages)",
+    "nav.repo":"card-design-generator","nav.repoTitle":"Project home · card-design-generator",
     "bench.title":"Card preview","bench.rounded":"Show 3.18 mm corner radius (applies to export)",
     "empty.title":"Upload an image for the card face","empty.sub":"The image is fitted and centred to the ISO 7810 ID-1 card ratio automatically. You can refine the composition in Crop afterwards.",
     "empty.cta":"Choose image",
