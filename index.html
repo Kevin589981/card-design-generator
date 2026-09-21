@@ -539,6 +539,32 @@ input[type=color]:disabled{opacity:.8;cursor:not-allowed;border-style:dashed}
 
     <div class="sect">
       <div class="sect-h">
+        <h2 data-i18n="sec.ref">参考图</h2>
+        <span class="aux">1.586 : 1</span>
+      </div>
+      <div class="drop" id="refDrop" role="button" tabindex="0"
+           aria-label="上传参考图" data-i18n-aria="ref.drop.aria">
+        <div class="glyph"><svg class="icon"><use href="#i-image"/></svg></div>
+        <div class="t" data-i18n="ref.drop.title">拖拽图片到此处，或点击选择</div>
+        <div class="s" data-i18n="ref.drop.hint">JPG、PNG、WebP、SVG</div>
+      </div>
+      <div class="btn-row">
+        <button class="btn" id="btnRefFit"><svg class="icon"><use href="#i-refit"/></svg><span data-i18n="btn.refit">重新匹配</span></button>
+        <button class="btn" id="btnRefCrop"><svg class="icon"><use href="#i-crop"/></svg><span data-i18n="btn.crop">裁剪</span></button>
+      </div>
+      <div id="refCtl" class="hidden" style="margin-top:14px">
+        <label class="chk-line" style="margin-bottom:11px">
+          <input type="checkbox" id="refShow" checked>
+          <span style="font-size:12.5px;font-weight:500" data-i18n="ref.show">显示参考图</span>
+        </label>
+        <div class="field-h"><span data-i18n="adj.opacity">不透明度</span><span class="v" id="refOpacityVal">40%</span></div>
+        <input type="range" id="refOpacityRange" min="0" max="100" step="1" value="40">
+      </div>
+      <div class="hint" data-i18n-html="ref.tip"></div>
+    </div>
+
+    <div class="sect">
+      <div class="sect-h">
         <h2 data-i18n="sec.logo">Logo</h2>
         <span class="aux" id="logoCount"></span>
       </div>
@@ -573,6 +599,7 @@ input[type=color]:disabled{opacity:.8;cursor:not-allowed;border-style:dashed}
           <div class="field-h"><span data-i18n="adj.rotation">旋转</span><span class="v" id="rotateVal">0°</span></div>
           <input type="range" id="rotateRange" min="-180" max="180" step="1" value="0">
         </div>
+        <div class="hint" data-i18n="adj.nudge"></div>
         <div class="divider"></div>
         <label class="chk-line" style="margin-bottom:11px">
           <input type="checkbox" id="bgRemove">
@@ -657,7 +684,7 @@ input[type=color]:disabled{opacity:.8;cursor:not-allowed;border-style:dashed}
     <div class="modal-h">
       <span class="glyph" style="background:var(--signal-soft);color:var(--signal)"><svg class="icon lg"><use href="#i-crop"/></svg></span>
       <div>
-        <h3 data-i18n="crop.title">裁剪卡面图片</h3>
+        <h3 id="cropTitle">裁剪卡面图片</h3>
         <div class="sub" data-i18n="crop.sub">拖动裁剪框调整位置，拖动四角缩放；比例锁定为 1.586 : 1</div>
       </div>
       <div class="spacer"></div>
@@ -679,6 +706,7 @@ input[type=color]:disabled{opacity:.8;cursor:not-allowed;border-style:dashed}
 <div id="toast" role="status" aria-live="polite"></div>
 
 <input type="file" id="fileImg" accept="image/*" class="hidden">
+<input type="file" id="fileRef" accept="image/*" class="hidden">
 <input type="file" id="fileLogo" accept="image/svg+xml,image/png,image/jpeg,image/webp" multiple class="hidden">
 
 <script>
@@ -689,9 +717,12 @@ const EXPORT_W = 1536, EXPORT_H = 969;
 
 const state = {
   bgImage:null, bgSource:null, hasBg:false,
+  // 参考图：与卡面图片同一套匹配方式，但只叠在预览上做对位，不参与导出
+  refImage:null, refSource:null, hasRef:false, refOn:true, refOpacity:0.4,
   logos:[], selected:null, hover:null,
   dragging:false, dragId:null, dragOffX:0, dragOffY:0,
   rounded:true,
+  cropTarget:"bg",                 // 裁剪弹窗当前作用于哪张图
 };
 const $ = id => document.getElementById(id);
 const canvas = $("stage");
@@ -708,7 +739,7 @@ const I18N = {
     "bench.title":"卡面预览","bench.rounded":"按 3.18 mm 圆角呈现（导出同步）",
     "empty.title":"上传一张图片作为卡面","empty.sub":"图片会自动按 ISO 7810 ID-1 卡面比例匹配并居中，之后可在裁剪里二次调整构图。",
     "empty.cta":"选择图片",
-    "sec.image":"卡面图片","sec.logo":"Logo","sec.adjust":"调整","sec.layers":"图层",
+    "sec.image":"卡面图片","sec.ref":"参考图","sec.logo":"Logo","sec.adjust":"调整","sec.layers":"图层",
     "drop.title":"拖拽图片到此处，或点击选择","drop.hint":"JPG、PNG、WebP、SVG",
     "drop.aria":"上传卡面图片",
     "btn.refit":"重新匹配","btn.crop":"裁剪",
@@ -717,19 +748,23 @@ const I18N = {
     "logo.drop.aria":"上传 Logo",
     "logo.tip":"请上传你有权使用的 logo。本项目不提供任何第三方预设 Logo 或官方素材。",
     "tip.fit":"图片会<b>等比缩放并居中</b>填满卡面，超出部分自动裁掉；始终锁定 1.586 : 1 的宽高比。",
+    "ref.drop.title":"拖拽图片到此处，或点击选择","ref.drop.hint":"JPG、PNG、WebP、SVG",
+    "ref.drop.aria":"上传参考图","ref.show":"显示参考图",
+    "ref.tip":"参考图按 1.586 : 1 匹配后<b>叠在卡面之上、logo 之下</b>，只用于对位和比稿，<b>不会出现在导出的 PNG 里</b>。",
     "adj.empty":"点击卡面上的 logo 进行编辑","adj.size":"大小","adj.opacity":"不透明度",
-    "adj.rotation":"旋转","adj.removeBg":"去除背景底色","adj.tolerance":"去底容差",
+    "adj.rotation":"旋转","adj.nudge":"方向键微调位置。",
+    "adj.removeBg":"去除背景底色","adj.tolerance":"去底容差",
     "adj.stroke":"外描边","adj.strokeWidth":"描边宽度","adj.strokeColor":"描边颜色",
     "adj.strokeAuto":"自动对比色","adj.strokeColorPick":"选择描边颜色",
     "adj.strokeHint":"描边沿 logo 轮廓向外扩展，不覆盖主体，也不会改变 logo 的形状与比例。宽度以导出画布像素（1536 × 969）为单位。",
     "adj.up":"上移一层","adj.down":"下移一层","adj.delete":"删除",
     "layers.empty":"暂无 logo",
-    "toast.fitted":"已重新匹配卡面尺寸","toast.cropped":"裁剪已应用",
+    "toast.fitted":"已重新匹配卡面尺寸","toast.refitted":"已重新匹配参考图尺寸","toast.cropped":"裁剪已应用",
     "toast.exported":"已导出 1536 × 969 PNG","toast.cleared":"已清空画布",
-    "toast.noImage":"请先上传卡面图片","toast.notImage":"请选择图片文件",
+    "toast.noImage":"请先上传卡面图片","toast.noRef":"请先上传参考图","toast.notImage":"请选择图片文件",
     "toast.loadFail":"图片加载失败，请换一张","toast.langSaved":"已切换为中文",
     "confirm.clear":"确定清空画布吗？此操作无法撤销。",
-    "crop.title":"裁剪卡面图片","crop.sub":"拖动裁剪框调整位置，拖动四角缩放；比例锁定为 1.586 : 1",
+    "crop.title":"裁剪卡面图片","crop.titleRef":"裁剪参考图","crop.sub":"拖动裁剪框调整位置，拖动四角缩放；比例锁定为 1.586 : 1",
     "legal.title":"使用条款","legal.sub":"使用前请阅读并确认",
     "legal.agree":"我已阅读并同意上述条款，并确认我上传的内容由我负责。",
     "legal.decline":"不同意，退出","legal.accept":"同意并继续",
@@ -746,7 +781,7 @@ const I18N = {
     "bench.title":"Card preview","bench.rounded":"Show 3.18 mm corner radius (applies to export)",
     "empty.title":"Upload an image for the card face","empty.sub":"The image is fitted and centred to the ISO 7810 ID-1 card ratio automatically. You can refine the composition in Crop afterwards.",
     "empty.cta":"Choose image",
-    "sec.image":"Card image","sec.logo":"Logo","sec.adjust":"Adjust","sec.layers":"Layers",
+    "sec.image":"Card image","sec.ref":"Reference","sec.logo":"Logo","sec.adjust":"Adjust","sec.layers":"Layers",
     "drop.title":"Drop an image here, or click to choose","drop.hint":"JPG, PNG, WebP, SVG",
     "drop.aria":"Upload the card image",
     "btn.refit":"Refit","btn.crop":"Crop",
@@ -755,19 +790,23 @@ const I18N = {
     "logo.drop.aria":"Upload logos",
     "logo.tip":"Upload only logos you have the right to use. This project ships no third-party preset logos or official materials.",
     "tip.fit":"The image is <b>scaled and centred</b> to fill the card, overflow is trimmed, and the 1.586 : 1 ratio is always locked.",
+    "ref.drop.title":"Drop an image here, or click to choose","ref.drop.hint":"JPG, PNG, WebP, SVG",
+    "ref.drop.aria":"Upload the reference image","ref.show":"Show reference",
+    "ref.tip":"The reference is fitted to 1.586 : 1 and <b>laid over the card, beneath the logos</b>, for alignment and comparison only — it is <b>never included in the exported PNG</b>.",
     "adj.empty":"Click a logo on the card to edit it","adj.size":"Size","adj.opacity":"Opacity",
-    "adj.rotation":"Rotation","adj.removeBg":"Remove background colour","adj.tolerance":"Tolerance",
+    "adj.rotation":"Rotation","adj.nudge":"Arrow keys nudge the position.",
+    "adj.removeBg":"Remove background colour","adj.tolerance":"Tolerance",
     "adj.stroke":"Outline","adj.strokeWidth":"Outline width","adj.strokeColor":"Outline colour",
     "adj.strokeAuto":"Auto contrast","adj.strokeColorPick":"Pick outline colour",
     "adj.strokeHint":"The outline grows outward from the logo silhouette — it never covers the artwork or changes its shape or proportions. Width is measured in export-canvas pixels (1536 × 969).",
     "adj.up":"Move up","adj.down":"Move down","adj.delete":"Delete",
     "layers.empty":"No logos yet",
-    "toast.fitted":"Refitted to the card ratio","toast.cropped":"Crop applied",
+    "toast.fitted":"Refitted to the card ratio","toast.refitted":"Reference refitted to the card ratio","toast.cropped":"Crop applied",
     "toast.exported":"Exported 1536 × 969 PNG","toast.cleared":"Canvas cleared",
-    "toast.noImage":"Upload a card image first","toast.notImage":"That is not an image file",
+    "toast.noImage":"Upload a card image first","toast.noRef":"Upload a reference image first","toast.notImage":"That is not an image file",
     "toast.loadFail":"Could not load that image, try another","toast.langSaved":"Switched to English",
     "confirm.clear":"Clear the canvas? This cannot be undone.",
-    "crop.title":"Crop the card image","crop.sub":"Drag the box to reposition, drag a corner to resize; the ratio is locked to 1.586 : 1",
+    "crop.title":"Crop the card image","crop.titleRef":"Crop the reference image","crop.sub":"Drag the box to reposition, drag a corner to resize; the ratio is locked to 1.586 : 1",
     "legal.title":"Terms of Use","legal.sub":"Please read and confirm before use",
     "legal.agree":"I have read and agree to the terms above, and confirm that the content I upload is my responsibility.",
     "legal.decline":"Decline and exit","legal.accept":"Agree and continue",
@@ -824,6 +863,7 @@ function applyI18n(){
   renderLayers();
   syncEditor();
   updateCropReadout();
+  syncCropTitle();
 }
 
 /* ================= 通用 ================= */
@@ -866,6 +906,21 @@ async function handleImageFile(file){
     state.bgImage = fitImageToCard(img);
     state.hasBg = true;
     render();
+  }catch(e){ toast(t("toast.loadFail")); }
+  finally{ dz.classList.remove("busy"); }
+}
+/* 参考图与卡面图片走完全相同的「加载 → 等比匹配成 1036 × 640」，只是落在另一个槽位 */
+async function handleRefFile(file){
+  if(!file) return;
+  if(!/^image\//.test(file.type)){ toast(t("toast.notImage")); return; }
+  const dz = $("refDrop");
+  dz.classList.add("busy");
+  try{
+    const img = await loadImage(URL.createObjectURL(file));
+    state.refSource = img;
+    state.refImage = fitImageToCard(img);
+    state.hasRef = true;
+    render(); syncRefCtl();
   }catch(e){ toast(t("toast.loadFail")); }
   finally{ dz.classList.remove("busy"); }
 }
@@ -1091,38 +1146,66 @@ function strokeSprite(logo, dispW, dispH){
 function syncActions(){
   const has = !!state.hasBg;
   for(const id of ["btnFit","btnCropOpen","btnCropOpen2"]) $(id).disabled = !has;
+  const hasRef = !!state.hasRef;
+  for(const id of ["btnRefFit","btnRefCrop"]) $(id).disabled = !hasRef;
   $("btnExport").disabled = !has;
-  $("btnClear").disabled = !state.hasBg && state.logos.length === 0;
+  $("btnClear").disabled = !state.hasBg && !state.hasRef && state.logos.length === 0;
+}
+/* 参考图的两个控件只在真的有图时才出现，避免留一排点不动的控件 */
+function syncRefCtl(){
+  $("refCtl").classList.toggle("hidden", !state.hasRef);
+  $("refShow").checked = state.refOn;
+  $("refOpacityRange").value = Math.round(state.refOpacity*100);
+  $("refOpacityVal").textContent = Math.round(state.refOpacity*100)+"%";
+}
+
+/* 图层顺序：底图 → 参考图 → logo。参考图夹在中间，压在底图上便于对位，又不遮住 logo。
+   导出走 withRef = false，只留底图与 logo */
+function paintCard(dc, withRef){
+  dc.clearRect(0,0,EXPORT_W,EXPORT_H);
+  if(state.hasBg && state.bgImage) dc.drawImage(state.bgImage,0,0,EXPORT_W,EXPORT_H);
+  if(withRef) drawRefOverlay(dc);
+  for(const logo of state.logos) drawLogoArt(dc, logo);
+}
+/* 参考图夹在卡面与 logo 之间：像一张半透明硫酸纸，盖在底上才好对位 */
+function drawRefOverlay(dc){
+  if(!state.hasRef || !state.refImage || !state.refOn || state.refOpacity <= 0) return;
+  dc.save();
+  dc.globalAlpha = state.refOpacity;
+  dc.drawImage(state.refImage, 0, 0, EXPORT_W, EXPORT_H);
+  dc.restore();
 }
 function render(){
-  ctx.clearRect(0,0,EXPORT_W,EXPORT_H);
-  if(state.hasBg && state.bgImage) ctx.drawImage(state.bgImage,0,0,EXPORT_W,EXPORT_H);
-  for(const logo of state.logos) drawLogo(logo);
-  $("emptyState").classList.toggle("hidden", state.hasBg || state.logos.length>0);
+  paintCard(ctx, true);
+  for(const logo of state.logos) drawLogoChrome(logo);   // 选中框始终在最上层
+  $("emptyState").classList.toggle("hidden", state.hasBg || state.hasRef || state.logos.length>0);
   syncActions();
 }
 
-function drawLogo(logo){
+function drawLogoArt(dc, logo){
   const src = logo.processed || logo.img;
   const w = logo.baseW*logo.scale, h = logo.baseH*logo.scale;
-  ctx.save();
-  ctx.globalAlpha = logo.opacity;
-  ctx.translate(logo.x, logo.y);
-  if(logo.rotation) ctx.rotate(deg2rad(logo.rotation));
-  ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = "high";
+  dc.save();
+  dc.globalAlpha = logo.opacity;
+  dc.translate(logo.x, logo.y);
+  if(logo.rotation) dc.rotate(deg2rad(logo.rotation));
+  dc.imageSmoothingEnabled = true; dc.imageSmoothingQuality = "high";
   // 先画外描边（位于 logo 之下，只沿轮廓向外扩展），再画 logo 主体
   if(logo.strokeOn && logo.strokeWidth > 0){
     const sp = strokeSprite(logo, w, h);
     if(sp){
       const dw = w * (sp.w / sp.rw), dh = h * (sp.h / sp.rh);
-      ctx.drawImage(sp.canvas, -dw/2, -dh/2, dw, dh);
+      dc.drawImage(sp.canvas, -dw/2, -dh/2, dw, dh);
     }
   }
-  ctx.drawImage(src, -w/2, -h/2, w, h);
-  ctx.restore();
-
+  dc.drawImage(src, -w/2, -h/2, w, h);
+  dc.restore();
+}
+/* 选中 / 悬停的框与手柄：纯交互提示，同样不进导出 */
+function drawLogoChrome(logo){
   const isSel = state.selected===logo.id, isHov = state.hover===logo.id;
   if(!isSel && !isHov) return;
+  const w = logo.baseW*logo.scale, h = logo.baseH*logo.scale;
   ctx.save();
   ctx.translate(logo.x, logo.y);
   if(logo.rotation) ctx.rotate(deg2rad(logo.rotation));
@@ -1258,13 +1341,66 @@ canvas.addEventListener("wheel", e=>{
   l.scale = clamp(l.scale*(e.deltaY<0?1.08:0.92), 0.05, 5);
   syncEditor(); render();
 }, {passive:false});
+/* 键盘：方向键微调选中图层的位置。
+   单击 = 1 个导出画布像素；按住后自动重复，重复间隔越来越短、步长越来越大。
+   用自己这套计时而不是系统的按键重复，各平台的加速手感才一致。 */
+const nudge = { key:null, t0:0, timer:0 };
+const ARROW = { ArrowLeft:[-1,0], ArrowRight:[1,0], ArrowUp:[0,-1], ArrowDown:[0,1] };
+
+/* 步长：起步恒定 1px 便于对到整数像素，按久了才翻倍 */
+function nudgeStep(held){
+  if(held < 600) return 1;
+  return Math.min(16, Math.pow(2, Math.floor((held-600)/700)));
+}
+/* 重复间隔：前 320ms 不重复，之后按指数衰减，最快 14ms 一步 */
+function nudgeDelay(held){
+  if(held < 320) return 320 - held;
+  return Math.max(14, 90 * Math.pow(0.88, (held-320)/90));
+}
+function nudgeMove(key, step){
+  const l = cur(); if(!l) return;
+  const [dx,dy] = ARROW[key];
+  l.x = clamp(l.x + dx*step, 0, EXPORT_W);
+  l.y = clamp(l.y + dy*step, 0, EXPORT_H);
+  render();
+}
+function nudgeTick(){
+  if(!cur()){ nudgeStop(); return; }        // 图层被删掉或取消选中就停
+  const held = performance.now() - nudge.t0;
+  nudgeMove(nudge.key, nudgeStep(held));
+  nudge.timer = setTimeout(nudgeTick, nudgeDelay(held));
+}
+function nudgeStop(){
+  if(nudge.timer) clearTimeout(nudge.timer);
+  nudge.timer = 0; nudge.key = null;
+}
+function nudgeStart(key){
+  nudgeStop();
+  nudge.key = key; nudge.t0 = performance.now();
+  nudgeMove(key, 1);
+  nudge.timer = setTimeout(nudgeTick, nudgeDelay(0));
+}
+/* 输入控件里不抢键：滑块、文本框都要能正常用方向键 */
+function inField(e){
+  const tag = (e.target.tagName||"").toLowerCase();
+  return tag==="input" || tag==="textarea" || tag==="select";
+}
 window.addEventListener("keydown", e=>{
+  if(inField(e)) return;
+  if(ARROW[e.key]){
+    // 没选中图层、或按着修饰键时交回浏览器（翻页、滚动、前进后退等）
+    if(!cur() || e.ctrlKey || e.altKey || e.metaKey) return;
+    e.preventDefault();                     // 选中时方向键只用来微调，不滚动页面
+    if(e.repeat) return;                    // 忽略系统重复，走自己的加速
+    nudgeStart(e.key);
+    return;
+  }
   if(e.key==="Delete" || e.key==="Backspace"){
-    const tag = (e.target.tagName||"").toLowerCase();
-    if(tag==="input"||tag==="textarea"||tag==="select") return;
     if(state.selected) deleteSelected();
   }
 });
+window.addEventListener("keyup", e=>{ if(nudge.key === e.key) nudgeStop(); });
+window.addEventListener("blur", nudgeStop);
 function deleteSelected(){
   const i = state.logos.findIndex(l=>l.id===state.selected);
   if(i>=0) state.logos.splice(i,1);
@@ -1331,9 +1467,16 @@ const cropCanvas = $("cropCanvas"), cctx = cropCanvas.getContext("2d");
 const crop = { img:null, scale:1, dispW:0, dispH:0, boxX:0, boxY:0, boxW:0, boxH:0,
   dragging:false, mode:null, startX:0, startY:0, orig:null };
 
-function openCrop(){
-  if(!state.hasBg || !state.bgSource){ toast(t("toast.noImage")); return; }
-  const img = state.bgSource;
+/* 同一个裁剪弹窗服务两张图，靠 state.cropTarget 区分 */
+function syncCropTitle(){
+  $("cropTitle").textContent = t(state.cropTarget==="ref" ? "crop.titleRef" : "crop.title");
+}
+function openCrop(target){
+  const isRef = target === "ref";
+  const img = isRef ? state.refSource : state.bgSource;
+  if(!img){ toast(t(isRef ? "toast.noRef" : "toast.noImage")); return; }
+  state.cropTarget = isRef ? "ref" : "bg";
+  syncCropTitle();
   const maxW = Math.min(660, window.innerWidth*0.66);
   crop.scale = maxW/(img.naturalWidth||img.width);
   crop.img = img;
@@ -1445,7 +1588,8 @@ function applyCrop(){
   const cx = c.getContext("2d");
   cx.imageSmoothingEnabled = true; cx.imageSmoothingQuality = "high";
   cx.drawImage(crop.img, crop.boxX/s, crop.boxY/s, crop.boxW/s, crop.boxH/s, 0,0,EXPORT_W,EXPORT_H);
-  state.bgImage = c;
+  if(state.cropTarget === "ref") state.refImage = c;
+  else state.bgImage = c;
   closeCrop(); render();
   toast(t("toast.cropped"));
 }
@@ -1453,12 +1597,12 @@ function applyCrop(){
 /* ================= 导出 ================= */
 function exportPNG(){
   if(!state.hasBg){ toast(t("toast.noImage")); return; }
-  let out = canvas;
+  // 始终重画到离屏画布：参考图和选中框都只属于预览，不能进导出
+  const o = document.createElement("canvas");
+  o.width = EXPORT_W; o.height = EXPORT_H;
+  const oc = o.getContext("2d");
   if(state.rounded){
     const r = 3.18 * (EXPORT_W/85.6);   // 3.18mm 圆角
-    const o = document.createElement("canvas");
-    o.width = EXPORT_W; o.height = EXPORT_H;
-    const oc = o.getContext("2d");
     oc.beginPath();
     const rr = r;
     oc.moveTo(rr,0); oc.lineTo(EXPORT_W-rr,0); oc.quadraticCurveTo(EXPORT_W,0,EXPORT_W,rr);
@@ -1466,11 +1610,10 @@ function exportPNG(){
     oc.lineTo(rr,EXPORT_H); oc.quadraticCurveTo(0,EXPORT_H,0,EXPORT_H-rr);
     oc.lineTo(0,rr); oc.quadraticCurveTo(0,0,rr,0); oc.closePath();
     oc.clip();
-    oc.drawImage(canvas,0,0);
-    out = o;
   }
+  paintCard(oc, false);
   const a = document.createElement("a");
-  a.href = out.toDataURL("image/png");
+  a.href = o.toDataURL("image/png");
   a.download = "card-design.png";
   a.click();
   toast(t("toast.exported"));
@@ -1480,8 +1623,10 @@ function exportPNG(){
 function clearAll(){
   if(!confirm(t("confirm.clear"))) return;
   state.hasBg=false; state.bgImage=null; state.bgSource=null;
+  state.hasRef=false; state.refImage=null; state.refSource=null;
+  state.refOn=true; state.refOpacity=0.4; state.cropTarget="bg";
   state.logos=[]; state.selected=null; state.hover=null;
-  syncEditor(); renderLayers(); render();
+  syncEditor(); syncRefCtl(); renderLayers(); render();
   toast(t("toast.cleared"));
 }
 
@@ -1525,6 +1670,7 @@ function keyActivate(el, fn){
   });
 }
 keyActivate($("dropZone"), ()=> $("fileImg").click());
+keyActivate($("refDrop"), ()=> $("fileRef").click());
 keyActivate($("logoDrop"), ()=> $("fileLogo").click());
 $("dropZone").onclick = ()=> $("fileImg").click();
 $("btnUploadEmpty").onclick = e=>{ e.stopPropagation(); $("fileImg").click(); };
@@ -1535,10 +1681,29 @@ $("dropZone").ondrop = e=>{
   if(e.dataTransfer.files[0]) handleImageFile(e.dataTransfer.files[0]);
 };
 $("fileImg").onchange = e=>{ if(e.target.files[0]) handleImageFile(e.target.files[0]); e.target.value=""; };
+$("fileRef").onchange = e=>{ if(e.target.files[0]) handleRefFile(e.target.files[0]); e.target.value=""; };
 $("fileLogo").onchange = e=>{ addLogoFiles(e.target.files); e.target.value=""; };
 $("btnFit").onclick = ()=>{
   if(state.bgSource){ state.bgImage = fitImageToCard(state.bgSource); render(); toast(t("toast.fitted")); }
   else toast(t("toast.noImage"));
+};
+// 参考图投放区
+$("refDrop").onclick = ()=> $("fileRef").click();
+$("refDrop").ondragover = e=>{ e.preventDefault(); $("refDrop").classList.add("drag"); };
+$("refDrop").ondragleave = ()=> $("refDrop").classList.remove("drag");
+$("refDrop").ondrop = e=>{
+  e.preventDefault(); $("refDrop").classList.remove("drag");
+  if(e.dataTransfer.files[0]) handleRefFile(e.dataTransfer.files[0]);
+};
+$("btnRefFit").onclick = ()=>{
+  if(state.refSource){ state.refImage = fitImageToCard(state.refSource); render(); toast(t("toast.refitted")); }
+  else toast(t("toast.noRef"));
+};
+$("refShow").onchange = e=>{ state.refOn = e.target.checked; render(); };
+$("refOpacityRange").oninput = e=>{
+  state.refOpacity = e.target.value/100;
+  $("refOpacityVal").textContent = e.target.value+"%";
+  render();
 };
 // logo 投放区
 $("logoDrop").onclick = ()=> $("fileLogo").click();
@@ -1548,8 +1713,9 @@ $("logoDrop").ondrop = e=>{
   e.preventDefault(); $("logoDrop").classList.remove("drag");
   addLogoFiles(e.dataTransfer.files);
 };
-$("btnCropOpen").onclick = openCrop;
-$("btnCropOpen2").onclick = openCrop;
+$("btnCropOpen").onclick = ()=> openCrop("bg");
+$("btnCropOpen2").onclick = ()=> openCrop("bg");
+$("btnRefCrop").onclick = ()=> openCrop("ref");
 $("cropClose").onclick = closeCrop;
 $("cropCancel").onclick = closeCrop;
 $("cropApply").onclick = applyCrop;
@@ -1576,6 +1742,7 @@ window.addEventListener("drop", e=>{
 /* ================= 启动 ================= */
 (function init(){
   applyI18n();          // 渲染法律声明、图层、文案
+  syncRefCtl();
   render();
 })();
 </script>
